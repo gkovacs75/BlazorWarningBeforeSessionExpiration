@@ -1,0 +1,102 @@
+﻿@inherits LayoutComponentBase
+
+@using System.Timers
+@inject NavigationManager navigationManager
+@inject IJSRuntime JSRuntime
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+<!-- Button trigger modal -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sessionTimeoutModal">
+    Launch static backdrop modal
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="sessionTimeoutModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="sessionTimeoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="sessionTimeoutModalLabel">Session Expiring...</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Your Session is about to expire. </p>
+                <p>Click OK to continue.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    private Timer timerObj;
+    private Timer timerObj2;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            timerObj = new Timer(8000);
+            timerObj.Elapsed += TimeoutExpired!;
+            timerObj.AutoReset = false;
+
+            timerObj2 = new Timer(4000);
+            timerObj2.Elapsed += TimeoutExpiredWarning!;
+            timerObj2.AutoReset = false;
+
+            await JSRuntime.InvokeVoidAsync("setupTimeout", DotNetObjectReference.Create(this));
+            //StateHasChanged();
+            timerObj.Start();
+            timerObj2.Start();
+        }
+    }
+    [JSInvokable]
+    public void ResetTimer()
+    {
+        timerObj.Stop();
+        timerObj.Start();
+
+        timerObj2.Stop();
+        timerObj2.Start();
+    }
+
+    private void TimeoutExpiredWarning(Object source, ElapsedEventArgs e)
+    {
+//        timerObj.Stop();
+
+        var good = (JSRuntime.InvokeVoidAsync("showSessionAboutToExpire", DotNetObjectReference.Create(this))).IsCompletedSuccessfully;
+
+        //navigationManager.NavigateTo("/Counter", true);
+    }
+
+    private void TimeoutExpired(Object source, ElapsedEventArgs e)
+    {
+        // timerObj.Stop();
+        // timerObj.Elapsed -= TimeoutExpired2!;
+
+        navigationManager.NavigateTo("/Counter", true);
+    }        
+}
